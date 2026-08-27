@@ -18,14 +18,21 @@ router.get("/journey", async (req, res) => {
 // GET /api/hero — contenu du Hero (ligne unique)
 router.get("/hero", async (req, res) => {
   const { data, error } = await supabase.from("hero_content").select("*").eq("id", 1).single();
-  if (error) return res.status(500).json({ error: "Erreur serveur." });
+  if (error) {
+    // Ligne absente (jamais initialisee) -> contenu vide plutot qu'une erreur bloquante.
+    if (error.code === "PGRST116") return res.json({ hero: null });
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
   return res.json({ hero: data });
 });
 
 // GET /api/about — contenu de la section A propos (ligne unique)
 router.get("/about", async (req, res) => {
   const { data, error } = await supabase.from("about_content").select("*").eq("id", 1).single();
-  if (error) return res.status(500).json({ error: "Erreur serveur." });
+  if (error) {
+    if (error.code === "PGRST116") return res.json({ about: null });
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
   return res.json({ about: data });
 });
 
