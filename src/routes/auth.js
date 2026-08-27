@@ -17,8 +17,11 @@ const loginLimiter = rateLimit({
 const COOKIE_NAME = "sm_session";
 const COOKIE_OPTS = {
   httpOnly: true, // inaccessible en JavaScript cote frontend (protege contre le vol de session)
-  secure: process.env.NODE_ENV === "production", // HTTPS uniquement en production
-  sameSite: "lax",
+  // Dashboard et backend sont sur deux domaines differents (vercel.app / onrender.com) :
+  // un cookie "cross-site" exige sameSite:"none" + secure:true, sinon le navigateur
+  // le rejette silencieusement (connexion qui semble reussir puis se defait aussitot).
+  secure: true,
+  sameSite: "none",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
 };
 
