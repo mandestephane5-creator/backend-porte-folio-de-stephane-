@@ -19,6 +19,11 @@ const socialsNavRoutes = require("./src/routes/socials-nav");
 
 const app = express();
 
+// Necessaire derriere un proxy inverse (Render, Railway, Heroku...) :
+// sans ca, express-rate-limit (utilise sur /login, /contact...) plante
+// en tentant de lire l'adresse IP du visiteur, provoquant une erreur 502.
+app.set("trust proxy", 1);
+
 // ---------------------------------------------------------
 // Securite de base : n'autoriser que votre site a appeler cette API
 // ---------------------------------------------------------
