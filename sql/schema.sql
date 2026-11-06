@@ -51,7 +51,7 @@ create table if not exists projects (
   tech_stack text[] default '{}',
   features text[] default '{}',
   project_date date,
-  completion_status text not null default 'prototype' check (completion_status in ('termine', 'en_developpement', 'prototype')),
+  completion_status text not null default 'prototype' check (completion_status in ('termine', 'en_developpement', 'prototype', 'maquette')),
   publish_status text not null default 'brouillon' check (publish_status in ('brouillon', 'publie', 'archive')),
   github_url text,
   live_url text,
@@ -195,6 +195,7 @@ create table if not exists media (
   url text not null,
   type text,
   size_bytes int,
+  storage_path text,
   created_at timestamptz default now()
 );
 
@@ -324,9 +325,9 @@ create policy "Public lit la navigation visible" on navigation_links for select 
 -- Donnees de depart
 -- =========================================================
 insert into projects (title, slug, tagline, description, tech_stack, completion_status, publish_status, sort_order) values
-('KOZ AUTO', 'koz-auto', 'Solution digitale pour une activite de vente automobile.',
- 'Un site multi-pages avec catalogue, fiches vehicules detaillees et prise de contact directe via WhatsApp.',
- array['HTML','CSS','JavaScript','LocalStorage','WhatsApp'], 'termine', 'publie', 1),
+('KOZ SERVICES', 'koz-services', 'Site web pour une entreprise d''importation et de vente de vehicules.',
+ 'Une maquette de site multi-pages, consultable en ligne, qui oriente chaque demande vers WhatsApp.',
+ array['HTML','CSS','JavaScript','WhatsApp'], 'maquette', 'publie', 1),
 ('EduBF / Zentech School', 'edubf-zentech-school', 'Plateforme de gestion scolaire pensee pour eleves, parents et enseignants.',
  'Une plateforme complete centralisant les eleves, enseignants, parents et classes, avec des roles utilisateurs distincts.',
  array['React','React Native','Expo','Next.js','Node.js','Prisma','PostgreSQL','Supabase'], 'en_developpement', 'publie', 2),
@@ -342,9 +343,22 @@ insert into projects (title, slug, tagline, description, tech_stack, completion_
 on conflict (slug) do nothing;
 
 insert into theme_settings (id) values (1) on conflict (id) do nothing;
+insert into hero_content (id) values (1) on conflict (id) do nothing;
+insert into about_content (id) values (1) on conflict (id) do nothing;
+insert into social_links (name, url, icon, active, sort_order)
+select 'GitHub', 'https://github.com/mandestephane5-creator', 'fa-brands fa-github', true, 1
+where not exists (select 1 from social_links);
 insert into site_settings (id, first_name, last_name, display_name, professional_title, email, whatsapp, copyright_text)
-  values (1, 'Stéphane', 'Mande', 'Stéphane Mande', 'Développeur Web & Mobile', 'contact@example.com', '22670123456', '© Stéphane Mande')
+  values (1, 'Stéphane', 'Mande', 'Stéphane Mande', 'Développeur Web & Mobile', 'Emmanuelmande263@gmail.com', '22665074260', '© Stéphane Mande. Tous droits réservés.')
   on conflict (id) do nothing;
 insert into seo_settings (id, seo_title, meta_description, site_name)
   values (1, 'Stéphane Mande — Développeur Web & Mobile', 'Développeur web et mobile autodidacte base a Ouagadougou.', 'Stéphane Mande')
   on conflict (id) do nothing;
+
+-- =========================================================
+-- Stockage des images (Supabase Storage)
+-- =========================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('portfolio', 'portfolio', true, 5242880,
+        array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+on conflict (id) do nothing;

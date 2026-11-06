@@ -1,7 +1,17 @@
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+
+// Variables indispensables : on s'arrete tout de suite avec un message clair
+// plutot que de demarrer un serveur qui echouera a la premiere connexion.
+for (const cle of ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "JWT_SECRET"]) {
+  if (!process.env[cle]) {
+    console.error(`Variable d'environnement manquante : ${cle} (voir .env.example).`);
+    process.exit(1);
+  }
+}
 
 const contactRoutes = require("./src/routes/contact");
 const projectsPublicRoutes = require("./src/routes/projects-public");
@@ -23,6 +33,7 @@ const app = express();
 // sans ca, express-rate-limit (utilise sur /login, /contact...) plante
 // en tentant de lire l'adresse IP du visiteur, provoquant une erreur 502.
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
 
 // ---------------------------------------------------------
 // Securite de base : n'autoriser que votre site a appeler cette API
@@ -39,14 +50,26 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("Origine non autorisee par la politique CORS."));
+        const err = new Error("Origine non autorisee par la politique CORS.");
+        err.status = 403;
+        callback(err);
       }
     },
     credentials: true,
   })
 );
 
-app.use(express.json());
+// En-tetes de securite simples (l'API ne renvoie que du JSON)
+app.use((req, res, next) => {
+  res.set({
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+  });
+  next();
+});
+
+app.use(express.json({ limit: "1mb" })); // un long article tient largement dans 1 Mo
 app.use(cookieParser());
 
 // ---------------------------------------------------------
@@ -70,15 +93,25 @@ app.use("/api", mediaRoutes);
 app.use("/api", settingsRoutes);
 app.use("/api", socialsNavRoutes);
 
+app.use("/api", (req, res) => res.status(404).json({ error: "Route introuvable." }));
+
 // ---------------------------------------------------------
 // Gestion des erreurs
 // ---------------------------------------------------------
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
+  if (err.type === "entity.too.large") return res.status(413).json({ error: "Contenu trop volumineux." });
+  if (err.type === "entity.parse.failed") return res.status(400).json({ error: "Donnees envoyees illisibles." });
+  if (err.status && err.status < 500) return res.status(err.status).json({ error: err.message });
   console.error(err);
   res.status(500).json({ error: "Erreur serveur inattendue." });
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Serveur demarre sur http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Serveur demarre sur http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

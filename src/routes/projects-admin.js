@@ -80,7 +80,7 @@ router.post("/admin/projects", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "La description est obligatoire." });
   }
 
-  const validCompletion = ["termine", "en_developpement", "prototype"];
+  const validCompletion = ["termine", "en_developpement", "prototype", "maquette"];
   const validPublish = ["brouillon", "publie", "archive"];
   if (completionStatus && !validCompletion.includes(completionStatus)) {
     return res.status(400).json({ error: "Statut d'avancement invalide." });

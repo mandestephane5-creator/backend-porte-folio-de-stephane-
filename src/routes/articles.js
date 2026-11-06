@@ -54,7 +54,10 @@ router.post("/admin/articles", async (req, res) => {
   const { title, excerpt, content, imageUrl, category, tags, status } = req.body;
   if (!title || !content) return res.status(400).json({ error: "Le titre et le contenu sont obligatoires." });
 
-  const slug = slugify(title);
+  // Adresse de l'article tiree du titre ; si elle existe deja, on la rend unique.
+  let slug = slugify(title) || "article";
+  const { data: existant } = await supabase.from("articles").select("id").eq("slug", slug);
+  if (existant && existant.length) slug = `${slug}-${Date.now().toString().slice(-5)}`;
   const finalStatus = status || "brouillon";
 
   const { data, error } = await supabase

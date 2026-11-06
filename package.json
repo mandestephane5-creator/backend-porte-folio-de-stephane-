@@ -9,14 +9,15 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
     "@supabase/supabase-js": "^2.45.0",
-    "cors": "^2.8.5",
-    "cookie-parser": "^1.4.6",
-    "dotenv": "^16.4.5",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
     "ws": "^8.18.0"
   }
 }

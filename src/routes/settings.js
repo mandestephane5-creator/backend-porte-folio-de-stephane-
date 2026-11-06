@@ -25,6 +25,24 @@ router.get("/seo", async (req, res) => {
   return res.json({ seo: data });
 });
 
+// GET /api/site — coordonnees, reseaux et SEO en une seule requete,
+// lue par toutes les pages publiques (moins d'allers-retours au reveil du serveur).
+router.get("/site", async (req, res) => {
+  const [settings, seo, socials] = await Promise.all([
+    supabase.from("site_settings").select("*").eq("id", 1).single(),
+    supabase.from("seo_settings").select("*").eq("id", 1).single(),
+    supabase.from("social_links").select("*").eq("active", true).order("sort_order", { ascending: true }),
+  ]);
+  // Une ligne absente n'est pas une erreur : le site garde alors ses valeurs par defaut.
+  const grave = [settings, seo, socials].find((r) => r.error && r.error.code !== "PGRST116");
+  if (grave) {
+    console.error("Erreur lecture reglages du site :", grave.error);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+  res.set("Cache-Control", "public, max-age=60");
+  return res.json({ settings: settings.data || null, seo: seo.data || null, socials: socials.data || [] });
+});
+
 /* =========================================================
    ADMIN (protege) — chaque ressource est une ligne unique
 ========================================================= */
@@ -43,12 +61,12 @@ router.patch("/admin/theme", async (req, res) => {
   for (const key of allowed) if (req.body[key] !== undefined) updates[key] = req.body[key];
   updates.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase.from("theme_settings").update(updates).eq("id", 1).select().single();
+  const { data, error } = await supabase.from("theme_settings").upsert({ id: 1, ...updates }).select().single();
   if (error) return res.status(500).json({ error: "Erreur serveur." });
   return res.json({ theme: data });
 });
 
-// GET /api/admin/theme/reset — reinitialise aux couleurs par defaut
+// POST /api/admin/theme/reset — reinitialise aux couleurs par defaut
 router.post("/admin/theme/reset", async (req, res) => {
   const defaults = {
     bg_primary: "#ffffff", bg_secondary: "#f1f2f6", card_color: "#ffffff",
@@ -72,7 +90,7 @@ router.patch("/admin/settings", async (req, res) => {
   for (const key of allowed) if (req.body[key] !== undefined) updates[key] = req.body[key];
   updates.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase.from("site_settings").update(updates).eq("id", 1).select().single();
+  const { data, error } = await supabase.from("site_settings").upsert({ id: 1, ...updates }).select().single();
   if (error) return res.status(500).json({ error: "Erreur serveur." });
   return res.json({ settings: data });
 });
@@ -84,7 +102,7 @@ router.patch("/admin/seo", async (req, res) => {
   for (const key of allowed) if (req.body[key] !== undefined) updates[key] = req.body[key];
   updates.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase.from("seo_settings").update(updates).eq("id", 1).select().single();
+  const { data, error } = await supabase.from("seo_settings").upsert({ id: 1, ...updates }).select().single();
   if (error) return res.status(500).json({ error: "Erreur serveur." });
   return res.json({ seo: data });
 });

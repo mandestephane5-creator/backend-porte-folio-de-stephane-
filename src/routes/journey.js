@@ -94,7 +94,7 @@ router.patch("/admin/hero", async (req, res) => {
   for (const key of allowed) if (req.body[key] !== undefined) updates[key] = req.body[key];
   updates.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase.from("hero_content").update(updates).eq("id", 1).select().single();
+  const { data, error } = await supabase.from("hero_content").upsert({ id: 1, ...updates }).select().single();
   if (error) return res.status(500).json({ error: "Erreur serveur." });
   return res.json({ hero: data });
 });
@@ -106,7 +106,7 @@ router.patch("/admin/about", async (req, res) => {
   for (const key of allowed) if (req.body[key] !== undefined) updates[key] = req.body[key];
   updates.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase.from("about_content").update(updates).eq("id", 1).select().single();
+  const { data, error } = await supabase.from("about_content").upsert({ id: 1, ...updates }).select().single();
   if (error) return res.status(500).json({ error: "Erreur serveur." });
   return res.json({ about: data });
 });
